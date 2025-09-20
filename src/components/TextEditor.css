@@ -1,0 +1,144 @@
+.text-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.editor-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 20px;
+}
+
+.editor-content {
+  flex: 1;
+  min-height: 400px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  outline: none;
+  background: white;
+  resize: none;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
+
+.editor-content.grid-mode {
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  font-size: 20px;
+  line-height: 24px;
+  background-image: 
+    linear-gradient(to right, #d0d0d0 1px, transparent 1px),
+    linear-gradient(to bottom, #d0d0d0 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 15px 15px;
+  background-clip: content-box;
+  padding: 40px;
+  border: 2px solid #333;
+  background-color: white;
+  box-shadow: inset 0 0 0 40px white, inset 0 0 0 41px #d0d0d0;
+  letter-spacing: 4px;
+  text-align: left;
+  word-spacing: 0;
+  text-align-last: left;
+  box-sizing: content-box;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  margin: 0 auto;
+  display: block;
+}
+
+.editor-content.grid-mode * {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  word-spacing: inherit;
+}
+
+.grid-btn {
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+.grid-btn:hover {
+  background: #218838;
+}
+
+.grid-btn.active {
+  background: #dc3545;
+}
+
+.grid-btn.active:hover {
+  background: #c82333;
+}
+
+.editor-content::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.editor-content:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.character-counter {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+}
+
+.counter-item {
+  display: flex;
+  gap: 5px;
+}
+
+.counter-label {
+  color: #666;
+}
+
+.counter-value {
+  font-weight: bold;
+  color: #333;
+}
+
+.editor-status {
+  padding: 10px 0;
+  border-top: 1px solid #ddd;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.chars-per-line-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.chars-input {
+  width: 60px;
+  padding: 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+}
