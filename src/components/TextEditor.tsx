@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import CharacterCounter from './CharacterCounter';
 import './TextEditor.css';
 
@@ -7,15 +7,31 @@ const TextEditor: React.FC = () => {
   const [gridMode, setGridMode] = useState(true);
   const [isComposing, setIsComposing] = useState(false);
   const [charsPerLine, setCharsPerLine] = useState(40);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
-    let text = e.currentTarget.value;
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    const cursorPos = target.selectionStart;
+    let text = target.value;
+    
     if (gridMode && !isComposing) {
-      // すべての半角文字を全角に変換
+      // カーソル位置より前の文字数をカウント
+      const beforeCursor = text.substring(0, cursorPos);
+      const convertedBefore = beforeCursor.replace(/[\x20-\x7E]/g, (char) => {
+        if (char === ' ') return '　';
+        return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
+      });
+      
+      // 全体を変換
       text = text.replace(/[\x20-\x7E]/g, (char) => {
         if (char === ' ') return '　';
         return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
       });
+      
+      // カーソル位置を復元
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = convertedBefore.length;
+      }, 0);
     }
     setContent(text);
   };
@@ -50,6 +66,48 @@ const TextEditor: React.FC = () => {
     }
   };
 
+  const handleDownload = () => {
+    const downloadText = content.replace(/[！-～　]/g, (char) => {
+      if (char === '　') return ' ';
+      return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
+    });
+    const blob = new Blob([downloadText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '小論文.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const syncBackgroundPosition = () => {
+    if (textareaRef.current && gridMode) {
+      const scrollTop = textareaRef.current.scrollTop;
+      const scrollLeft = textareaRef.current.scrollLeft;
+      textareaRef.current.style.backgroundPosition = `${-scrollLeft}px ${-scrollTop}px`;
+    }
+  };
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const handleScroll = () => syncBackgroundPosition();
+    const handleInput = () => {
+      setTimeout(syncBackgroundPosition, 0);
+    };
+
+    textarea.addEventListener('scroll', handleScroll);
+    textarea.addEventListener('input', handleInput);
+
+    return () => {
+      textarea.removeEventListener('scroll', handleScroll);
+      textarea.removeEventListener('input', handleInput);
+    };
+  }, [gridMode]);
+
+
+
   const toggleGridMode = () => {
     const newGridMode = !gridMode;
     setGridMode(newGridMode);
@@ -80,35 +138,44 @@ const TextEditor: React.FC = () => {
         >
           {gridMode ? '方眼紙OFF' : '方眼紙ON'}
         </button>
+
+        <button onClick={handleDownload} className="download-btn">
+            ダウンロード
+        </button>
         {gridMode && (
           <div className="chars-per-line-control">
             <label>1行文字数: </label>
-            <input 
-              type="number" 
-              min="10" 
-              max="40" 
+            <select 
               value={charsPerLine} 
               onChange={(e) => setCharsPerLine(Number(e.target.value))}
               className="chars-input"
-            />
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={40}>40</option>
+            </select>
           </div>
         )}
         <CharacterCounter text={content} gridMode={gridMode} charsPerLine={charsPerLine} />
       </div>
       
-      <textarea
-        className={`editor-content ${gridMode ? 'grid-mode' : ''}`}
-        value={content}
-        onChange={handleInput}
-        onKeyDown={handleKeyDown}
-        onCompositionStart={handleCompositionStart}
-        onCompositionEnd={handleCompositionEnd}
-        placeholder="小論文を入力してください..."
-        style={gridMode ? { width: `calc(24px * ${charsPerLine})` } : {}}
-      />
-      
-      <div className="editor-status">
-        <span>文字数: {content.length}</span>
+      <div 
+        className={`editor-container ${gridMode ? 'grid-container' : ''}`}
+        style={gridMode ? { width: `calc(24px * ${charsPerLine} + 85px)` } : {}}
+      >
+        <textarea
+          ref={textareaRef}
+          className={`editor-content ${gridMode ? 'grid-mode' : ''}`}
+          value={content}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
+          placeholder="小論文を入力してください..."
+          style={gridMode ? { 
+            width: `${24 * charsPerLine + 5}px`
+          } : {}}
+        />
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 .text-editor {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  margin: 0 auto;
+  height: 100%;
+  overflow: hidden;
   padding: 20px;
 }
 
@@ -14,11 +14,10 @@
   padding: 10px 0;
   border-bottom: 1px solid #ddd;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .editor-content {
-  flex: 1;
-  min-height: 400px;
   padding: 20px;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -30,9 +29,39 @@
   outline: none;
   background: white;
   resize: none;
+  overflow: hidden;
+  height: auto;
+  min-height: 400px;
+}
+
+.editor-content:not(.grid-mode) {
+  width: 100%;
+  max-width: 800px;
+  height: 500px;
+  overflow: auto;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
+
+.editor-container {
+  display: flex;
+  justify-content: center;
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  padding: 20px;
+  width: 100%;
+}
+
+.editor-container.grid-container {
+  background-color: white;
+  padding: 40px;
+  border: 2px solid #333;
+  margin: 0 auto;
+  width: fit-content;
+  overflow: auto;
+  max-height: 100%;
+}
 
 .editor-content.grid-mode {
   font-family: 'Roboto Mono', 'Courier New', monospace;
@@ -42,21 +71,27 @@
     linear-gradient(to right, #d0d0d0 1px, transparent 1px),
     linear-gradient(to bottom, #d0d0d0 1px, transparent 1px);
   background-size: 24px 24px;
-  background-position: 15px 15px;
-  background-clip: content-box;
-  padding: 40px;
-  border: 2px solid #333;
-  background-color: white;
-  box-shadow: inset 0 0 0 40px white, inset 0 0 0 41px #d0d0d0;
+  background-position: 0px 0px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background-color: transparent;
   letter-spacing: 4px;
   text-align: left;
   word-spacing: 0;
   text-align-last: left;
-  box-sizing: content-box;
+  box-sizing: border-box;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  margin: 0 auto;
   display: block;
+  outline: none;
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: pre-wrap;
+  resize: none;
+  min-height: 400px;
+  height: auto;
 }
 
 .editor-content.grid-mode * {
@@ -126,6 +161,7 @@
   margin-top: 20px;
   font-size: 14px;
   color: #666;
+  flex-shrink: 0;
 }
 
 .chars-per-line-control {
@@ -141,4 +177,20 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   text-align: center;
+  background: white;
+  cursor: pointer;
+}
+
+.download-btn {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.download-btn:hover {
+  background: #0056b3;
 }

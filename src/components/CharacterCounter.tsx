@@ -7,7 +7,7 @@ interface CharacterCounterProps {
 }
 
 const CharacterCounter: React.FC<CharacterCounterProps> = ({ text, gridMode = false, charsPerLine = 40 }) => {
-  const totalChars = text.length;
+  const totalChars = text.replace(/\n/g, '').length;
   const nonSpaceChars = text.replace(/\s/g, '').length;
   const lines = text.split('\n');
   
