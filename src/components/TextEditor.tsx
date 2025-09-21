@@ -1,21 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CharacterCounter from './CharacterCounter';
 import './TextEditor.css';
-
-// 文字変換処理を分離
-const convertToFullWidth = (text: string): string => {
-  return text.replace(/[\x20-\x7E]/g, (char) => {
-    if (char === ' ') return '　';
-    return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
-  });
-};
-
-const convertToHalfWidth = (text: string): string => {
-  return text.replace(/[！-～　]/g, (char) => {
-    if (char === '　') return ' ';
-    return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
-  });
-};
+import { convertToFullWidth, convertToHalfWidth, processTextInput, createDownloadContent } from '../utils/textConverter';
 
 const TextEditor: React.FC = () => {
   const [content, setContent] = useState('');
@@ -27,7 +13,7 @@ const TextEditor: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     const cursorPos = target.selectionStart;
-    let text = target.value;
+    let text = processTextInput(target.value);
     
     if (gridMode && !isComposing) {
       // カーソル位置より前の文字数をカウント
@@ -51,7 +37,7 @@ const TextEditor: React.FC = () => {
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
     setIsComposing(false);
-    let text = e.currentTarget.value;
+    let text = processTextInput(e.currentTarget.value);
     if (gridMode) {
       text = convertToFullWidth(text);
     }
@@ -73,7 +59,7 @@ const TextEditor: React.FC = () => {
   };
 
   const handleDownload = () => {
-    const downloadText = convertToHalfWidth(content);
+    const downloadText = createDownloadContent(content);
     const blob = new Blob([downloadText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
