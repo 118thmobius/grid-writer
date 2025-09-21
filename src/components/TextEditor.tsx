@@ -2,6 +2,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import CharacterCounter from './CharacterCounter';
 import './TextEditor.css';
 
+// 文字変換処理を分離
+const convertToFullWidth = (text: string): string => {
+  return text.replace(/[\x20-\x7E]/g, (char) => {
+    if (char === ' ') return '　';
+    return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
+  });
+};
+
+const convertToHalfWidth = (text: string): string => {
+  return text.replace(/[！-～　]/g, (char) => {
+    if (char === '　') return ' ';
+    return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
+  });
+};
+
 const TextEditor: React.FC = () => {
   const [content, setContent] = useState('');
   const [gridMode, setGridMode] = useState(true);
@@ -17,16 +32,10 @@ const TextEditor: React.FC = () => {
     if (gridMode && !isComposing) {
       // カーソル位置より前の文字数をカウント
       const beforeCursor = text.substring(0, cursorPos);
-      const convertedBefore = beforeCursor.replace(/[\x20-\x7E]/g, (char) => {
-        if (char === ' ') return '　';
-        return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
-      });
+      const convertedBefore = convertToFullWidth(beforeCursor);
       
       // 全体を変換
-      text = text.replace(/[\x20-\x7E]/g, (char) => {
-        if (char === ' ') return '　';
-        return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
-      });
+      text = convertToFullWidth(text);
       
       // カーソル位置を復元
       setTimeout(() => {
@@ -44,10 +53,7 @@ const TextEditor: React.FC = () => {
     setIsComposing(false);
     let text = e.currentTarget.value;
     if (gridMode) {
-      text = text.replace(/[\x20-\x7E]/g, (char) => {
-        if (char === ' ') return '　';
-        return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
-      });
+      text = convertToFullWidth(text);
     }
     setContent(text);
   };
@@ -67,10 +73,7 @@ const TextEditor: React.FC = () => {
   };
 
   const handleDownload = () => {
-    const downloadText = content.replace(/[！-～　]/g, (char) => {
-      if (char === '　') return ' ';
-      return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
-    });
+    const downloadText = convertToHalfWidth(content);
     const blob = new Blob([downloadText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -114,17 +117,11 @@ const TextEditor: React.FC = () => {
     
     if (newGridMode) {
       // 方眼紙ON: 半角を全角に変換
-      const convertedText = content.replace(/[\x20-\x7E]/g, (char) => {
-        if (char === ' ') return '　';
-        return String.fromCharCode(char.charCodeAt(0) + 0xFEE0);
-      });
+      const convertedText = convertToFullWidth(content);
       setContent(convertedText);
     } else {
       // 方眼紙OFF: 全角を半角に変換
-      const convertedText = content.replace(/[！-～　]/g, (char) => {
-        if (char === '　') return ' ';
-        return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
-      });
+      const convertedText = convertToHalfWidth(content);
       setContent(convertedText);
     }
   };
