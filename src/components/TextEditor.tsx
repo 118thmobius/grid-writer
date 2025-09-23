@@ -269,7 +269,7 @@ const TextEditor: React.FC = () => {
       
       <div 
         className={`editor-container ${gridMode ? 'grid-container' : ''}`}
-        style={gridMode ? { width: `calc(24px * ${charsPerLine} + 100px)` } : {}}
+        style={gridMode ? { width: `calc(24px * ${charsPerLine} + 120px)` } : {}}
       >
         <div className="editor-wrapper">
           <textarea
@@ -284,7 +284,7 @@ const TextEditor: React.FC = () => {
             onClick={updateCursorPosition}
             placeholder="小論文を入力してください..."
             style={gridMode ? { 
-              width: `${24 * charsPerLine + 1}px`
+              width: `${24 * charsPerLine + 2}px`
             } : {}}
           />
           {gridMode && getLineCharCounts().map(({lineIndex, count}) => (
