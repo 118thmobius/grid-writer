@@ -260,3 +260,14 @@
   width: 30px;
   text-align: center;
 }
+
+.carry-over-indicator {
+  position: absolute;
+  top: 0;
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 9;
+  width: 30px;
+  text-align: center;
+}

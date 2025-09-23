@@ -23,18 +23,23 @@ const TextEditor: React.FC = () => {
     let text = processTextInput(target.value);
     
     if (gridMode && !isComposing) {
-      // カーソル位置より前の文字数をカウント
-      const beforeCursor = text.substring(0, cursorPos);
-      const convertedBefore = convertToFullWidth(beforeCursor);
-      
-      // 全体を変換
+      const originalText = text;
       text = convertToFullWidth(text);
       
-      // カーソル位置を復元
-      setTimeout(() => {
-        target.selectionStart = target.selectionEnd = convertedBefore.length;
-        updateCursorPosition();
-      }, 0);
+      // 変換前後で文字数が変わった場合のみカーソル位置を調整
+      if (originalText !== text) {
+        const beforeCursor = originalText.substring(0, cursorPos);
+        const convertedBefore = convertToFullWidth(beforeCursor);
+        
+        setTimeout(() => {
+          if (target.selectionStart === target.value.length) {
+            // カーソルが末尾にある場合は調整しない
+            return;
+          }
+          target.selectionStart = target.selectionEnd = convertedBefore.length;
+          updateCursorPosition();
+        }, 0);
+      }
     }
     setContent(text);
     updateCursorPosition();
@@ -46,9 +51,23 @@ const TextEditor: React.FC = () => {
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
     setIsComposing(false);
-    let text = processTextInput(e.currentTarget.value);
+    const target = e.currentTarget;
+    const cursorPos = target.selectionStart;
+    let text = processTextInput(target.value);
+    
     if (gridMode) {
+      const originalText = text;
       text = convertToFullWidth(text);
+      
+      if (originalText !== text) {
+        const beforeCursor = originalText.substring(0, cursorPos);
+        const convertedBefore = convertToFullWidth(beforeCursor);
+        
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = convertedBefore.length;
+          updateCursorPosition();
+        }, 0);
+      }
     }
     setContent(text);
   };
@@ -69,10 +88,11 @@ const TextEditor: React.FC = () => {
   };
 
   const getLineCharCounts = () => {
-    if (!gridMode) return [];
+    if (!gridMode) return { counts: [], carryOverLines: [] };
     
     const lines = content.split('\n');
     const counts: Array<{lineIndex: number, count: number}> = [];
+    const carryOverLines: Array<{lineIndex: number}> = [];
     let virtualLineIndex = 0;
     
     for (let i = 0; i < lines.length; i++) {
@@ -92,7 +112,16 @@ const TextEditor: React.FC = () => {
           let totalCount = charCount;
           let j = i + 1;
           
+          // Mark full lines as carry-over lines
+          for (let k = 0; k < virtualLines - 1; k++) {
+            carryOverLines.push({lineIndex: virtualLineIndex + k});
+          }
+          
           while (j < lines.length && lines[j].length > 0 && lines[j].length >= charsPerLine) {
+            const currentVirtualLines = Math.ceil(lines[j].length / charsPerLine);
+            for (let k = 0; k < currentVirtualLines - 1; k++) {
+              carryOverLines.push({lineIndex: virtualLineIndex + Math.ceil(totalCount / charsPerLine) + k});
+            }
             totalCount += lines[j].length;
             j++;
           }
@@ -109,6 +138,10 @@ const TextEditor: React.FC = () => {
             i = j - 1;
           }
         } else {
+          // Mark full lines as carry-over lines
+          for (let k = 0; k < virtualLines - 1; k++) {
+            carryOverLines.push({lineIndex: virtualLineIndex + k});
+          }
           counts.push({lineIndex: virtualLineIndex + virtualLines - 1, count: charCount});
           virtualLineIndex += virtualLines;
         }
@@ -116,7 +149,14 @@ const TextEditor: React.FC = () => {
         let totalCount = charCount;
         let j = i + 1;
         
+        // Mark this line as carry-over
+        carryOverLines.push({lineIndex: virtualLineIndex});
+        
         while (j < lines.length && lines[j].length > 0 && lines[j].length >= charsPerLine) {
+          const currentVirtualLines = Math.ceil(lines[j].length / charsPerLine);
+          for (let k = 0; k < currentVirtualLines - 1; k++) {
+            carryOverLines.push({lineIndex: virtualLineIndex + Math.ceil(totalCount / charsPerLine) + k});
+          }
           totalCount += lines[j].length;
           j++;
         }
@@ -139,7 +179,7 @@ const TextEditor: React.FC = () => {
       }
     }
     
-    return counts;
+    return { counts, carryOverLines };
   };
 
   const getCursorCharCount = () => {
@@ -287,7 +327,7 @@ const TextEditor: React.FC = () => {
               width: `${24 * charsPerLine + 2}px`
             } : {}}
           />
-          {gridMode && getLineCharCounts().map(({lineIndex, count}) => (
+          {gridMode && getLineCharCounts().counts.map(({lineIndex, count}) => (
             <div 
               key={`${lineIndex}-${count}`}
               className="line-char-counter"
@@ -298,12 +338,24 @@ const TextEditor: React.FC = () => {
               {count}
             </div>
           ))}
+          {gridMode && getLineCharCounts().carryOverLines.map(({lineIndex}) => (
+            <div 
+              key={`carry-${lineIndex}`}
+              className="carry-over-indicator"
+              style={{
+                top: `${lineIndex * 24 + 8}px`,
+                left: `${24 * charsPerLine + 35}px`
+              }}
+            >
+              ↓
+            </div>
+          ))}
           {gridMode && getCursorCharCount() !== null && getCursorCharCount()! % charsPerLine !== 0 && getCursorPosition() && (
             <div 
               className="cursor-char-counter"
               style={{
                 top: `${getCursorPosition()!.top + 8}px`,
-                left: `${getCursorPosition()!.left }px`
+                left: `${getCursorPosition()!.left + 2}px`
               }}
             >
               {getCursorCharCount()}
