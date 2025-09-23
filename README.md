@@ -1,6 +1,6 @@
-# 小論文エディタ (Tensaku Editor)
+# 小論文エディタ (Essay Editor)
 
-小論文作成に特化したWebエディタです。方眼紙モードで文字数制限を意識した執筆をサポートします。
+小論文作成に特化したWebエディタです。方眼紙モードで文字数を意識した執筆をサポートします。
 
 ## 機能
 
@@ -20,7 +20,7 @@
 ```bash
 # リポジトリをクローン
 git clone <repository-url>
-cd tensaku
+cd essay-editor
 
 # 依存関係をインストール
 npm install
