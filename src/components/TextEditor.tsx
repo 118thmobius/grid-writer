@@ -26,19 +26,18 @@ const TextEditor: React.FC = () => {
       const originalText = text;
       text = convertToFullWidth(text);
       
-      // 変換前後で文字数が変わった場合のみカーソル位置を調整
       if (originalText !== text) {
         const beforeCursor = originalText.substring(0, cursorPos);
         const convertedBefore = convertToFullWidth(beforeCursor);
         
+        setContent(text);
         setTimeout(() => {
-          if (target.selectionStart === target.value.length) {
-            // カーソルが末尾にある場合は調整しない
-            return;
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart = textareaRef.current.selectionEnd = convertedBefore.length;
+            updateCursorPosition();
           }
-          target.selectionStart = target.selectionEnd = convertedBefore.length;
-          updateCursorPosition();
         }, 0);
+        return;
       }
     }
     setContent(text);
