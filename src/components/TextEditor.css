@@ -175,6 +175,9 @@
 .counter-value {
   font-weight: bold;
   color: #333;
+  min-width: 40px;
+  text-align: right;
+  display: inline-block;
 }
 
 .editor-status {
