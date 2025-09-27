@@ -223,12 +223,24 @@ const TextEditor: React.FC = () => {
   };
 
   const handleDownload = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const defaultName = `小論文-${year}-${month}-${day}T${hours}-${minutes}-${seconds}`;
+    const fileName = prompt('ファイル名を入力してください:', defaultName);
+    
+    if (fileName === null) return; // キャンセル時は何もしない
+    
     const downloadText = createDownloadContent(content);
     const blob = new Blob([downloadText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '小論文.txt';
+    a.download = fileName.endsWith('.txt') ? fileName : `${fileName}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
