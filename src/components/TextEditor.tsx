@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ChangeEvent, CompositionEvent } from 'react';
 import CharacterCounter from './CharacterCounter';
 import './TextEditor.css';
 import { convertToFullWidth, convertToHalfWidth, processTextInput, createDownloadContent } from '../utils/textConverter';
 
-const TextEditor: React.FC = () => {
+const TextEditor = () => {
   const [content, setContent] = useState('');
   const [gridMode, setGridMode] = useState(true);
   const [isComposing, setIsComposing] = useState(false);
@@ -17,7 +17,7 @@ const TextEditor: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     const cursorPos = target.selectionStart;
     let text = processTextInput(target.value);
@@ -48,7 +48,7 @@ const TextEditor: React.FC = () => {
     setIsComposing(true);
   };
 
-  const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+  const handleCompositionEnd = (e: CompositionEvent<HTMLTextAreaElement>) => {
     setIsComposing(false);
     const target = e.currentTarget;
     const cursorPos = target.selectionStart;
@@ -71,7 +71,7 @@ const TextEditor: React.FC = () => {
     setContent(text);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
       e.preventDefault();
       const target = e.currentTarget as HTMLTextAreaElement;
@@ -271,8 +271,6 @@ const TextEditor: React.FC = () => {
     };
   }, [gridMode]);
 
-
-
   const toggleGridMode = () => {
     const newGridMode = !gridMode;
     setGridMode(newGridMode);
@@ -299,7 +297,7 @@ const TextEditor: React.FC = () => {
         </button>
 
         <button onClick={handleDownload} className="download-btn">
-            ダウンロード
+          ダウンロード
         </button>
         {gridMode && (
           <div className="chars-per-line-control">

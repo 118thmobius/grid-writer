@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface CharacterCounterProps {
   text: string;
   gridMode?: boolean;
@@ -18,7 +16,7 @@ const calculateStats = (inputText: string, charsPerLine: number) => {
   return { totalChars, nonSpaceChars, actualLineCount, gridLineCount };
 };
 
-const CharacterCounter: React.FC<CharacterCounterProps> = ({ text, gridMode = false, charsPerLine = 40 }) => {
+const CharacterCounter = ({ text, gridMode = false, charsPerLine = 40 }: CharacterCounterProps) => {
   const stats = calculateStats(text, charsPerLine);
 
   return (
