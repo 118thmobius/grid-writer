@@ -17,7 +17,7 @@ const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }:
   const [isComposing, setIsComposing] = useState(false);
   const [maxChars, setMaxChars] = useState(400);
   const [cursorPosition, setCursorPosition] = useState(0);
-  const [isCustomMode, setIsCustomMode] = useState(true);
+  const [isCustomMode, setIsCustomMode] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const updateCursorPosition = () => {
