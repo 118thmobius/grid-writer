@@ -1,23 +1,23 @@
 import { useState, useRef, ChangeEvent, CompositionEvent } from 'react';
 import CharacterCounter from './CharacterCounter';
-import { convertToFullWidth, convertToHalfWidth, processTextInput } from '../utils/textConverter';
+import { convertToFullWidth, processTextInput } from '../utils/textConverter';
 import './Section.css';
 
 interface SectionProps {
   id: string;
   title: string;
+  gridMode: boolean;
+  charsPerLine: number;
   onDelete: (id: string) => void;
   onTitleChange: (id: string, title: string) => void;
 }
 
-const Section = ({ id, title, onDelete, onTitleChange }: SectionProps) => {
+const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }: SectionProps) => {
   const [content, setContent] = useState('');
-  const [gridMode, setGridMode] = useState(true);
   const [isComposing, setIsComposing] = useState(false);
-  const [charsPerLine, setCharsPerLine] = useState(40);
   const [maxChars, setMaxChars] = useState(400);
   const [cursorPosition, setCursorPosition] = useState(0);
-  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [isCustomMode, setIsCustomMode] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const updateCursorPosition = () => {
@@ -91,16 +91,7 @@ const Section = ({ id, title, onDelete, onTitleChange }: SectionProps) => {
     setContent(text);
   };
 
-  const toggleGridMode = () => {
-    const newGridMode = !gridMode;
-    setGridMode(newGridMode);
-    
-    if (newGridMode) {
-      setContent(convertToFullWidth(content));
-    } else {
-      setContent(convertToHalfWidth(content));
-    }
-  };
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && gridMode) {
@@ -221,10 +212,10 @@ const Section = ({ id, title, onDelete, onTitleChange }: SectionProps) => {
       const lastLineIndex = totalLines - 1;
       for (let i = lastLineChars; i < charsPerLine; i++) {
         disabledCells.push({
-          top: lastLineIndex * 24+2,
-          left: i * 24+2,
+          top: lastLineIndex * 24+1,
+          left: i * 24+1,
           width: 24-3,
-          height: 24-2
+          height: 24-3
         });
       }
     }
@@ -239,6 +230,7 @@ const Section = ({ id, title, onDelete, onTitleChange }: SectionProps) => {
           type="text"
           value={title}
           onChange={(e) => onTitleChange(id, e.target.value)}
+          onFocus={(e) => e.target.select()}
           className="section-title"
           placeholder="セクションタイトル"
         />
@@ -246,30 +238,8 @@ const Section = ({ id, title, onDelete, onTitleChange }: SectionProps) => {
       </div>
       
       <div className="section-toolbar">
-        <button 
-          onClick={toggleGridMode} 
-          className={`grid-btn ${gridMode ? 'active' : ''}`}
-        >
-          {gridMode ? '方眼紙OFF' : '方眼紙ON'}
-        </button>
-        
-        {gridMode && (
-          <div className="chars-per-line-control">
-            <label>1行文字数: </label>
-            <select 
-              value={charsPerLine} 
-              onChange={(e) => setCharsPerLine(Number(e.target.value))}
-              className="chars-input"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={40}>40</option>
-            </select>
-          </div>
-        )}
-        
         <div className="max-chars-control">
-          <label>最大文字数: </label>
+          <label>最大: </label>
           <select 
             value={isCustomMode ? 'custom' : maxChars} 
             onChange={(e) => {
@@ -285,6 +255,10 @@ const Section = ({ id, title, onDelete, onTitleChange }: SectionProps) => {
             {Array.from({length: 7}, (_, i) => 20 + i * 5).map(num => (
               <option key={num} value={num}>{num}</option>
             ))}
+            <option value={100}>100</option>
+            <option value={200}>200</option>
+            <option value={400}>400</option>
+            <option value={1000}>1000</option>
             <option value="custom">カスタム</option>
           </select>
           {isCustomMode && (
@@ -317,8 +291,8 @@ const Section = ({ id, title, onDelete, onTitleChange }: SectionProps) => {
             onClick={updateCursorPosition}
             placeholder="内容を入力してください..."
             style={gridMode ? { 
-              width: `${24 * charsPerLine +2}px`,
-              height: `${calculateHeight()-3}px`,
+              width: `${24 * charsPerLine }px`,
+              height: `${calculateHeight()-4}px`,
               overflow: 'hidden'
             } : { 
               height: `${calculateHeight()}px`,

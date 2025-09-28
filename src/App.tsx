@@ -11,6 +11,8 @@ function App() {
   const [sections, setSections] = useState<SectionData[]>([
     { id: '1', title: 'セクション1' }
   ]);
+  const [globalGridMode, setGlobalGridMode] = useState(true);
+  const [globalCharsPerLine, setGlobalCharsPerLine] = useState(40);
 
   const addSection = () => {
     const newId = Date.now().toString();
@@ -31,9 +33,32 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>小論文エディタ</h1>
-        <button onClick={addSection} className="add-section-btn">
-          セクション追加
-        </button>
+        <div className="header-controls">
+          {globalGridMode && (
+            <div className="chars-per-line-control">
+              <label>1行: </label>
+              <select 
+                value={globalCharsPerLine} 
+                onChange={(e) => setGlobalCharsPerLine(Number(e.target.value))}
+                className="chars-input"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={40}>40</option>
+                <option value={80}>80</option>
+              </select>
+            </div>
+          )}
+          <button 
+            onClick={() => setGlobalGridMode(!globalGridMode)} 
+            className={`grid-btn ${globalGridMode ? 'active' : ''}`}
+          >
+            {globalGridMode ? '方眼紙OFF' : '方眼紙ON'}
+          </button>
+          <button onClick={addSection} className="add-section-btn">
+            セクション追加
+          </button>
+        </div>
       </header>
       <main className="app-main">
         {sections.map(section => (
@@ -41,6 +66,8 @@ function App() {
             key={section.id}
             id={section.id}
             title={section.title}
+            gridMode={globalGridMode}
+            charsPerLine={globalCharsPerLine}
             onDelete={deleteSection}
             onTitleChange={updateSectionTitle}
           />

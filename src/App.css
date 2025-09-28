@@ -58,6 +58,12 @@ html, body {
   padding: 20px;
 }
 
+.header-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .add-section-btn {
   padding: 10px 20px;
   background: #28a745;
@@ -70,4 +76,48 @@ html, body {
 
 .add-section-btn:hover {
   background: #218838;
+}
+
+.grid-btn {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.grid-btn:hover {
+  background: #0056b3;
+}
+
+.grid-btn.active {
+  background: #dc3545;
+}
+
+.grid-btn.active:hover {
+  background: #c82333;
+}
+
+.chars-per-line-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.chars-input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
 }
