@@ -2,6 +2,7 @@ interface CharacterCounterProps {
   text: string;
   gridMode?: boolean;
   charsPerLine?: number;
+  maxChars?: number;
 }
 
 const calculateStats = (inputText: string, charsPerLine: number) => {
@@ -16,14 +17,17 @@ const calculateStats = (inputText: string, charsPerLine: number) => {
   return { totalChars, nonSpaceChars, actualLineCount, gridLineCount };
 };
 
-const CharacterCounter = ({ text, gridMode = false, charsPerLine = 40 }: CharacterCounterProps) => {
+const CharacterCounter = ({ text, gridMode = false, charsPerLine = 40, maxChars = 400 }: CharacterCounterProps) => {
   const stats = calculateStats(text, charsPerLine);
+  const isOverLimit = stats.totalChars > maxChars;
 
   return (
     <div className="character-counter">
       <div className="counter-item">
-        <span className="counter-label">総文字数:</span>
-        <span className="counter-value">{stats.totalChars}</span>
+        <span className="counter-label">文字数:</span>
+        <span className={`counter-value ${isOverLimit ? 'over-limit' : ''}`}>
+          {stats.totalChars}/{maxChars}
+        </span>
       </div>
       <div className="counter-item">
         <span className="counter-label">文字数(空白除く):</span>
