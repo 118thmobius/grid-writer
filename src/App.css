@@ -66,6 +66,40 @@ html, body {
 
 .add-section-btn {
   padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  margin-right: 8px;
+  box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.add-section-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.4);
+}
+
+.import-btn {
+  padding: 10px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.import-btn:hover {
+  background: #545b62;
+}
+
+.export-all-btn {
+  padding: 10px 20px;
   background: #28a745;
   color: white;
   border: none;
@@ -74,30 +108,39 @@ html, body {
   font-size: 14px;
 }
 
-.add-section-btn:hover {
+.export-all-btn:hover {
   background: #218838;
 }
 
 .grid-btn {
   padding: 10px 20px;
-  background: #007bff;
+  background: #6f42c1;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
+  font-weight: 600;
+  margin-right: 8px;
+  box-shadow: 0 2px 4px rgba(111,66,193,0.3);
+  transition: all 0.2s ease;
 }
 
 .grid-btn:hover {
-  background: #0056b3;
+  background: #5a32a3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(111,66,193,0.4);
 }
 
 .grid-btn.active {
   background: #dc3545;
+  box-shadow: 0 2px 4px rgba(220,53,69,0.3);
 }
 
 .grid-btn.active:hover {
   background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220,53,69,0.4);
 }
 
 .chars-per-line-control {

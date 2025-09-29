@@ -1,4 +1,4 @@
-import { useState, useRef, ChangeEvent, CompositionEvent } from 'react';
+import { useState, useRef, useEffect, ChangeEvent, CompositionEvent } from 'react';
 import CharacterCounter from './CharacterCounter';
 import { convertToFullWidth, processTextInput } from '../utils/textConverter';
 import './Section.css';
@@ -8,14 +8,25 @@ interface SectionProps {
   title: string;
   gridMode: boolean;
   charsPerLine: number;
+  initialContent?: string;
+  initialMaxChars?: number;
   onDelete: (id: string) => void;
   onTitleChange: (id: string, title: string) => void;
+  onContentChange: (id: string, content: string, maxChars: number) => void;
 }
 
-const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }: SectionProps) => {
-  const [content, setContent] = useState('');
+const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMaxChars, onDelete, onTitleChange, onContentChange }: SectionProps) => {
+  const [content, setContent] = useState(initialContent || '');
   const [isComposing, setIsComposing] = useState(false);
-  const [maxChars, setMaxChars] = useState(400);
+  const [maxChars, setMaxChars] = useState(initialMaxChars || 400);
+  
+  useEffect(() => {
+    setContent(initialContent || '');
+  }, [initialContent]);
+  
+  useEffect(() => {
+    setMaxChars(initialMaxChars || 400);
+  }, [initialMaxChars]);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -49,6 +60,7 @@ const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }:
         const convertedBefore = convertToFullWidth(beforeCursor);
         
         setContent(text);
+        onContentChange(id, text, maxChars);
         setTimeout(() => {
           if (textareaRef.current) {
             textareaRef.current.selectionStart = textareaRef.current.selectionEnd = convertedBefore.length;
@@ -60,6 +72,7 @@ const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }:
     }
     
     setContent(text);
+    onContentChange(id, text, maxChars);
     updateCursorPosition();
   };
 
@@ -89,6 +102,7 @@ const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }:
     }
     
     setContent(text);
+    onContentChange(id, text, maxChars);
   };
 
 
@@ -234,6 +248,7 @@ const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }:
           className="section-title"
           placeholder="セクションタイトル"
         />
+
         <button onClick={() => onDelete(id)} className="delete-btn">削除</button>
       </div>
       
@@ -246,8 +261,10 @@ const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }:
               if (e.target.value === 'custom') {
                 setIsCustomMode(true);
               } else {
+                const newMaxChars = Number(e.target.value);
                 setIsCustomMode(false);
-                setMaxChars(Number(e.target.value));
+                setMaxChars(newMaxChars);
+                onContentChange(id, content, newMaxChars);
               }
             }}
             className="chars-input"
@@ -265,7 +282,11 @@ const Section = ({ id, title, gridMode, charsPerLine, onDelete, onTitleChange }:
             <input 
               type="number" 
               value={maxChars} 
-              onChange={(e) => setMaxChars(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => {
+                const newMaxChars = Math.max(1, Number(e.target.value));
+                setMaxChars(newMaxChars);
+                onContentChange(id, content, newMaxChars);
+              }}
               className="chars-input"
               min="1"
               max="2000"
