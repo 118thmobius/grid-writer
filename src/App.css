@@ -44,12 +44,30 @@ html, body {
   align-items: center;
 }
 
-.app-header h1 {
+.app-title-input {
   margin: 0;
-  color: #333;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.02em;
+  color: #333;
+  background: white;
+  min-width: 300px;
+}
+
+.app-title-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.app-title-input:disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+  border: none;
 }
 
 .app-main {

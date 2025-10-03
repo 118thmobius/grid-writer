@@ -1,0 +1,31 @@
+{
+  "essay": {
+    "title": "小論文問題 第1問",
+    "globalSettings": {
+      "timer": {
+        "limit": 3600,
+        "elapsed": 0
+      },
+      "editable": true,
+      "editable_structure": false
+    },
+    "sections": [
+      {
+        "id": "1",
+        "title": "序論",
+        "content": "",
+        "metadata": {
+          "maxCharacters": 100
+        }
+      },
+      {
+        "id": "2",
+        "title": "本論",
+        "content": "",
+        "metadata": {
+          "maxCharacters": 200
+        }
+      }
+    ]
+  }
+}

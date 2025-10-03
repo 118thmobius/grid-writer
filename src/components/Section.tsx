@@ -3,7 +3,7 @@ import CharacterCounter from './CharacterCounter';
 import { convertToFullWidth, processTextInput } from '../utils/textConverter';
 import './Section.css';
 
-interface SectionProps {
+export interface SectionProps {
   id: string;
   title: string;
   gridMode: boolean;
@@ -20,6 +20,7 @@ interface SectionProps {
   onContentChange: (id: string, content: string, maxChars: number) => void;
   canDelete?: boolean;
   isEditable?: boolean;
+  isTitleEditable?: boolean;
 }
 
 const Section = ({ 
@@ -34,7 +35,8 @@ const Section = ({
   onTitleChange, 
   onContentChange, 
   canDelete = true, 
-  isEditable = true 
+  isEditable = true,
+  isTitleEditable = true 
 }: SectionProps) => {
   const [content, setContent] = useState(initialContent || '');
   const [isComposing, setIsComposing] = useState(false);
@@ -271,7 +273,7 @@ const Section = ({
           onFocus={(e) => e.target.select()}
           className="section-title"
           placeholder="セクションタイトル"
-          disabled={!isEditable}
+          disabled={!isTitleEditable}
         />
 
         <button 

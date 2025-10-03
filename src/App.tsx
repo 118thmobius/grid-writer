@@ -49,6 +49,7 @@ interface ImportedEssay {
 }
 
 function App() {
+  const [essayTitle, setEssayTitle] = useState('小論文');
   const [sections, setSections] = useState<SectionData[]>([
     { id: '1', title: 'セクション1' }
   ]);
@@ -150,7 +151,9 @@ function App() {
         const [key, ...valueParts] = trimmed.split(': ');
         const value = valueParts.join(': ');
         
-        if (inTotalScoring) {
+        if (key === 'title' && !currentSection && !inTotalScoring) {
+          result.essay!.title = value.replace(/"/g, '');
+        } else if (inTotalScoring) {
           if (key === 'maxPoints') {
             result.essay!.totalScoring!.maxPoints = parseInt(value) || null;
           } else if (key === 'points') {
@@ -269,6 +272,11 @@ function App() {
         
         const essay = parsed.essay;
         
+        // Restore essay title
+        if (essay.title) {
+          setEssayTitle(essay.title);
+        }
+        
         // Restore global settings (excluding gridMode and charsPerLine)
         if (essay.globalSettings) {
           setGlobalSettings({
@@ -385,7 +393,7 @@ ${contentLines}
     }
     
     const yamlString = `essay:
-  title: "小論文"
+  title: "${escapeYamlString(essayTitle)}"
 ${globalSettingsStr}  sections:
 ${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
 
@@ -408,7 +416,14 @@ ${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
   return (
     <div className="app">
       <header className="app-header">
-        <h1>小論文エディタ</h1>
+        <input 
+          type="text" 
+          value={essayTitle} 
+          onChange={(e) => setEssayTitle(e.target.value)}
+          className="app-title-input"
+          placeholder="小論文の題名"
+          disabled={!globalSettings.editable_structure}
+        />
         <div className="header-controls">
           {globalGridMode && (
             <div className="chars-per-line-control">
@@ -475,6 +490,7 @@ ${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
             onDelete={globalSettings.editable_structure ? deleteSection : () => {}}
             canDelete={globalSettings.editable_structure}
             isEditable={globalSettings.editable}
+            isTitleEditable={globalSettings.editable_structure}
             initialContent={section.content}
             initialMaxChars={section.maxChars}
             scoring={section.scoring}
