@@ -163,7 +163,7 @@ function App() {
                 const commentLine = lines[j];
                 if (commentLine.trim() && !commentLine.startsWith('    ')) break;
                 if (commentLine.startsWith('    ')) {
-                  comment += commentLine.substring(4) + '\n';
+                  comment += commentLine.substring(4).trimStart() + '\n';
                 }
               }
               result.essay!.totalScoring!.overallComment = comment.trim();
