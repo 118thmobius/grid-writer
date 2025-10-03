@@ -4,9 +4,18 @@
   margin-bottom: 20px;
   background: white;
   padding: 20px;
-  width: fit-content;
   margin-left: auto;
   margin-right: auto;
+}
+
+.section.grid-mode {
+  width: 1050px;
+  max-width: 90vw;
+}
+
+.section.normal-mode {
+  width: 600px;
+  max-width: 90vw;
 }
 
 .section-header {
@@ -38,6 +47,16 @@
 
 .delete-btn:hover {
   background: #c82333;
+}
+
+.delete-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.delete-btn:disabled:hover {
+  background: #6c757d;
 }
 
 .section-toolbar {
@@ -129,6 +148,7 @@
 
 .editor-wrapper {
   position: relative;
+  padding-right: 18px;
 }
 
 .line-char-counter {
@@ -183,7 +203,6 @@
 .section-editor {
   display: flex;
   justify-content: flex-start;
-  margin-right: 70px;
 }
 
 .section-editor.grid-container {
@@ -225,4 +244,71 @@
 .section-content:focus {
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.section-content:disabled,
+.section-content[readonly] {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.section-title:disabled {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.chars-input:disabled {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+}
+
+.section-scoring {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 14px;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  overflow: hidden;
+  width: 100%;
+}
+
+.score-info {
+  font-weight: bold;
+  color: #28a745;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.comment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-label {
+  font-weight: bold;
+  color: #495057;
+  flex-shrink: 0;
+}
+
+.comment-text {
+  color: #6c757d;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  white-space: pre-wrap;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }

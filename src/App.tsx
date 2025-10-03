@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Section from './components/Section';
-import { convertToFullWidth } from './utils/textConverter';
 import './App.css';
 
 interface SectionData {
@@ -8,6 +7,11 @@ interface SectionData {
   title: string;
   content?: string;
   maxChars?: number;
+  scoring?: {
+    maxPoints?: number | null;
+    points?: number | null;
+    comment?: string;
+  };
 }
 
 interface ImportedSection {
@@ -28,8 +32,12 @@ interface ImportedEssay {
   essay?: {
     title?: string;
     globalSettings?: {
-      gridMode?: boolean;
-      charsPerLine?: number;
+      timer?: {
+        limit?: number;
+        elapsed?: number;
+      };
+      editable?: boolean;
+      editable_structure?: boolean;
     };
     sections?: ImportedSection[];
     totalScoring?: {
@@ -46,6 +54,16 @@ function App() {
   ]);
   const [globalGridMode, setGlobalGridMode] = useState(true);
   const [globalCharsPerLine, setGlobalCharsPerLine] = useState(40);
+  const [globalSettings, setGlobalSettings] = useState({
+    timer: { limit: 0, elapsed: 0 } as { limit?: number; elapsed?: number },
+    editable: true,
+    editable_structure: true
+  });
+  const [totalScoring, setTotalScoring] = useState({
+    maxPoints: null as number | null,
+    points: null as number | null,
+    overallComment: ''
+  });
 
   const addSection = () => {
     const newId = Date.now().toString();
@@ -69,26 +87,34 @@ function App() {
   };
 
   const normalizeText = (text: string) => {
+    const FULL_WIDTH_OFFSET = 0xFEE0;
+    const FULL_WIDTH_SYMBOL_START = 0xFF01;
+    const FULL_WIDTH_SYMBOL_END = 0xFF5E;
+    
     return text
-      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xFEE0))
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (char) => 
+        String.fromCharCode(char.charCodeAt(0) - FULL_WIDTH_OFFSET)
+      )
       .replace(/[！-～]/g, (char) => {
         const code = char.charCodeAt(0);
-        if (code >= 0xFF01 && code <= 0xFF5E) {
-          return String.fromCharCode(code - 0xFEE0);
+        if (code >= FULL_WIDTH_SYMBOL_START && code <= FULL_WIDTH_SYMBOL_END) {
+          return String.fromCharCode(code - FULL_WIDTH_OFFSET);
         }
         return char;
       });
   };
 
   const parseYAML = (yamlText: string): ImportedEssay | null => {
+    if (!yamlText?.trim()) {
+      console.error('Empty YAML content');
+      return null;
+    }
+    
     try {
-      // Simple YAML parser for our specific format
       const lines = yamlText.split('\n');
       const result: ImportedEssay = { essay: { sections: [] } };
       let currentSection: ImportedSection | null = null;
-      let indent = 0;
-      let inContent = false;
-      let contentLines: string[] = [];
+      let inTotalScoring = false;
       
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -96,59 +122,122 @@ function App() {
         
         if (!trimmed || trimmed.startsWith('#')) continue;
         
-        const currentIndent = line.length - line.trimStart().length;
-        
-        if (inContent && currentIndent <= indent) {
-          if (currentSection && contentLines.length > 0) {
-            currentSection.content = contentLines.join('\n');
-            contentLines = [];
+        if (trimmed === 'totalScoring:') {
+          if (currentSection) {
+            result.essay!.sections!.push(currentSection);
+            currentSection = null;
           }
-          inContent = false;
-        }
-        
-        if (inContent) {
-          contentLines.push(line.substring(indent + 2));
+          inTotalScoring = true;
+          if (!result.essay!.totalScoring) result.essay!.totalScoring = {};
           continue;
         }
         
-        if (trimmed.includes(': |')) {
-          inContent = true;
-          indent = currentIndent;
+        if (trimmed === 'globalSettings:') {
+          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
           continue;
         }
         
-        const [key, value] = trimmed.split(': ');
-        
-        if (key === 'essay') {
-          result.essay = { sections: [] };
-        } else if (key === 'title' && currentIndent === 2) {
-          result.essay!.title = value?.replace(/"/g, '') || '';
-        } else if (key === 'gridMode') {
-          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
-          result.essay!.globalSettings.gridMode = value === 'true';
-        } else if (key === 'charsPerLine') {
-          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
-          result.essay!.globalSettings.charsPerLine = parseInt(value) || 40;
-        } else if (trimmed.startsWith('- id:')) {
+        if (trimmed.startsWith('- id:')) {
+          inTotalScoring = false;
           if (currentSection) {
             result.essay!.sections!.push(currentSection);
           }
-          currentSection = { id: value?.replace(/"/g, '') || Date.now().toString() };
+          const id = trimmed.split('"')[1] || Date.now().toString();
+          currentSection = { id };
+          continue;
+        }
+        
+        const [key, ...valueParts] = trimmed.split(': ');
+        const value = valueParts.join(': ');
+        
+        if (inTotalScoring) {
+          if (key === 'maxPoints') {
+            result.essay!.totalScoring!.maxPoints = parseInt(value) || null;
+          } else if (key === 'points') {
+            result.essay!.totalScoring!.points = parseInt(value) || null;
+          } else if (key === 'overallComment') {
+            if (value.includes('|')) {
+              // Multi-line comment
+              let comment = '';
+              for (let j = i + 1; j < lines.length; j++) {
+                const commentLine = lines[j];
+                if (commentLine.trim() && !commentLine.startsWith('    ')) break;
+                if (commentLine.startsWith('    ')) {
+                  comment += commentLine.substring(4) + '\n';
+                }
+              }
+              result.essay!.totalScoring!.overallComment = comment.trim();
+            } else {
+              result.essay!.totalScoring!.overallComment = value.replace(/"/g, '');
+            }
+          }
+        } else if (trimmed === 'timer:') {
+          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
+          if (!result.essay!.globalSettings.timer) result.essay!.globalSettings.timer = {};
+        } else if (key === 'limit') {
+          if (result.essay!.globalSettings?.timer) {
+            result.essay!.globalSettings.timer.limit = parseInt(value) || 0;
+          }
+        } else if (key === 'elapsed') {
+          if (result.essay!.globalSettings?.timer) {
+            result.essay!.globalSettings.timer.elapsed = parseInt(value) || 0;
+          }
+        } else if (key === 'editable') {
+          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
+          result.essay!.globalSettings.editable = value === 'true';
+        } else if (key === 'editable_structure') {
+          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
+          result.essay!.globalSettings.editable_structure = value === 'true';
         } else if (key === 'title' && currentSection) {
-          currentSection.title = value?.replace(/"/g, '') || '';
+          currentSection.title = value.replace(/"/g, '');
         } else if (key === 'maxCharacters' && currentSection) {
           if (!currentSection.metadata) currentSection.metadata = {};
           currentSection.metadata.maxCharacters = parseInt(value) || 400;
+        } else if (key === 'content' && value.includes('|')) {
+          // Multi-line content
+          let content = '';
+          for (let j = i + 1; j < lines.length; j++) {
+            const contentLine = lines[j];
+            // Stop when we hit metadata: or any line with 6 spaces that contains a colon
+            if (contentLine.trim() && (contentLine.startsWith('      ') && contentLine.includes(':'))) {
+              break;
+            }
+            if (contentLine.startsWith('        ')) {
+              content += contentLine.substring(8) + '\n';
+            }
+          }
+          if (currentSection) currentSection.content = content.replace(/\n+$/, '');
+        } else if (key === 'maxPoints' && currentSection) {
+          if (!currentSection.scoring) currentSection.scoring = {};
+          currentSection.scoring.maxPoints = parseInt(value) || null;
+        } else if (key === 'points' && currentSection) {
+          if (!currentSection.scoring) currentSection.scoring = {};
+          currentSection.scoring.points = parseInt(value) || null;
+        } else if (key === 'comment' && currentSection && value.includes('|')) {
+          if (!currentSection.scoring) currentSection.scoring = {};
+          // Multi-line comment
+          let comment = '';
+          for (let j = i + 1; j < lines.length; j++) {
+            const commentLine = lines[j];
+            if (commentLine.trim() && !commentLine.startsWith('          ') && !commentLine.startsWith('    - id:') && commentLine.includes(':')) {
+              break;
+            }
+            if (commentLine.startsWith('          ')) {
+              comment += commentLine.substring(10) + '\n';
+            }
+          }
+          currentSection.scoring.comment = comment.trim();
+        } else if (key === 'comment' && currentSection) {
+          if (!currentSection.scoring) currentSection.scoring = {};
+          currentSection.scoring.comment = value.replace(/"/g, '');
         }
       }
       
       if (currentSection) {
-        if (contentLines.length > 0) {
-          currentSection.content = contentLines.join('\n');
-        }
         result.essay!.sections!.push(currentSection);
       }
       
+
       return result;
     } catch (error) {
       console.error('YAML parsing error:', error);
@@ -180,29 +269,34 @@ function App() {
         
         const essay = parsed.essay;
         
-        // Restore global settings
+        // Restore global settings (excluding gridMode and charsPerLine)
         if (essay.globalSettings) {
-          if (essay.globalSettings.gridMode !== undefined) {
-            setGlobalGridMode(essay.globalSettings.gridMode);
-          }
-          if (essay.globalSettings.charsPerLine !== undefined) {
-            setGlobalCharsPerLine(essay.globalSettings.charsPerLine);
-          }
+          setGlobalSettings({
+            timer: {
+              limit: essay.globalSettings.timer?.limit ?? 0,
+              elapsed: essay.globalSettings.timer?.elapsed ?? 0
+            },
+            editable: essay.globalSettings.editable ?? true,
+            editable_structure: essay.globalSettings.editable_structure ?? true
+          });
         }
+        
+        // Restore total scoring
+        setTotalScoring({
+          maxPoints: essay.totalScoring?.maxPoints ?? null,
+          points: essay.totalScoring?.points ?? null,
+          overallComment: essay.totalScoring?.overallComment ?? ''
+        });
         
         // Completely replace sections
         if (essay.sections && essay.sections.length > 0) {
           const newSections: SectionData[] = essay.sections.map((section, index) => {
-            let content = section.content || '';
-            // Convert to full-width if grid mode is enabled
-            if (essay.globalSettings?.gridMode) {
-              content = convertToFullWidth(content);
-            }
             return {
               id: section.id || Date.now().toString() + index,
               title: section.title || `セクション${index + 1}`,
-              content,
-              maxChars: section.metadata?.maxCharacters || 400
+              content: section.content || '',
+              maxChars: section.metadata?.maxCharacters || 400,
+              scoring: section.scoring
             };
           });
           
@@ -232,7 +326,7 @@ function App() {
         metadata: {
           maxCharacters: section.maxChars || 400
         },
-        scoring: {
+        scoring: section.scoring || {
           maxPoints: null,
           points: null,
           comment: ""
@@ -240,31 +334,60 @@ function App() {
       };
     });
 
+    const escapeYamlString = (str: string) => {
+      return str.replace(/"/g, '\\"').replace(/\\/g, '\\\\');
+    };
+    
     const sectionStrings = yamlSections.map(section => {
-      const contentLines = section.content.split('\n').map(line => `      ${line}`).join('\n');
-      return `  - id: "${section.id}"
-    title: "${section.title}"
-    content: |
+      const contentLines = section.content.split('\n').map(line => `        ${escapeYamlString(line)}`).join('\n');
+      const scoringComment = section.scoring.comment ? section.scoring.comment.split('\n').map(line => `          ${escapeYamlString(line)}`).join('\n') : '';
+      
+      return `    - id: "${escapeYamlString(section.id)}"
+      title: "${escapeYamlString(section.title)}"
+      content: |
 ${contentLines}
-    metadata:
-      maxCharacters: ${section.metadata.maxCharacters}
-    scoring:
-      maxPoints: ${section.scoring.maxPoints}
-      points: ${section.scoring.points}
-      comment: "${section.scoring.comment}"`;
+      metadata:
+        maxCharacters: ${section.metadata.maxCharacters}${section.scoring.maxPoints !== null || section.scoring.points !== null || section.scoring.comment ? `
+      scoring:
+        maxPoints: ${section.scoring.maxPoints}
+        points: ${section.scoring.points}
+        comment: |${scoringComment ? '\n' + scoringComment : ''}` : ''}`;
     });
+    
+    const hasGlobalSettings = globalSettings.timer?.limit || globalSettings.timer?.elapsed || 
+                             globalSettings.editable !== true || globalSettings.editable_structure !== true;
+    
+    let globalSettingsStr = '';
+    if (hasGlobalSettings) {
+      globalSettingsStr = '  globalSettings:\n';
+      if (globalSettings.timer?.limit || globalSettings.timer?.elapsed) {
+        globalSettingsStr += `    timer:\n      limit: ${globalSettings.timer.limit}\n      elapsed: ${globalSettings.timer.elapsed}\n`;
+      }
+      if (globalSettings.editable !== true) {
+        globalSettingsStr += `    editable: ${globalSettings.editable}\n`;
+      }
+      if (globalSettings.editable_structure !== true) {
+        globalSettingsStr += `    editable_structure: ${globalSettings.editable_structure}\n`;
+      }
+    }
+    
+    const hasTotalScoring = totalScoring.maxPoints !== null || totalScoring.points !== null || totalScoring.overallComment;
+    
+    let totalScoringStr = '';
+    if (hasTotalScoring) {
+      totalScoringStr = '  totalScoring:\n';
+      if (totalScoring.maxPoints !== null) totalScoringStr += `    maxPoints: ${totalScoring.maxPoints}\n`;
+      if (totalScoring.points !== null) totalScoringStr += `    points: ${totalScoring.points}\n`;
+      if (totalScoring.overallComment) {
+        const commentLines = totalScoring.overallComment.split('\n').map(line => `      ${escapeYamlString(line)}`).join('\n');
+        totalScoringStr += `    overallComment: |\n${commentLines}`;
+      }
+    }
     
     const yamlString = `essay:
   title: "小論文"
-  globalSettings:
-    gridMode: ${globalGridMode}
-    charsPerLine: ${globalCharsPerLine}
-  sections:
-${sectionStrings.join('\n')}
-  totalScoring:
-    maxPoints: null
-    points: null
-    overallComment: ""`;
+${globalSettingsStr}  sections:
+${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
 
     try {
       const blob = new Blob([yamlString], { type: 'text/yaml' });
@@ -308,7 +431,11 @@ ${sectionStrings.join('\n')}
           >
             {globalGridMode ? '■ 方眼紙OFF' : '□ 方眼紙ON'}
           </button>
-          <button onClick={addSection} className="add-section-btn">
+          <button 
+            onClick={globalSettings.editable_structure ? addSection : undefined} 
+            className="add-section-btn"
+            disabled={!globalSettings.editable_structure}
+          >
             + セクション追加
           </button>
           <button onClick={importFromYAML} className="import-btn">
@@ -319,6 +446,24 @@ ${sectionStrings.join('\n')}
           </button>
         </div>
       </header>
+      {(totalScoring.maxPoints !== null || totalScoring.points !== null || totalScoring.overallComment) && (
+        <div className="total-scoring">
+          <h3>全体採点</h3>
+          {(totalScoring.maxPoints !== null || totalScoring.points !== null) && (
+            <div className="total-score">
+              総得点: {totalScoring.points ?? '-'}/{totalScoring.maxPoints ?? '-'}
+            </div>
+          )}
+          {totalScoring.overallComment && (
+            <div className="overall-comment">
+              <strong>全体講評:</strong>
+              <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                {totalScoring.overallComment}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
       <main className="app-main">
         {sections.map(section => (
           <Section
@@ -327,9 +472,12 @@ ${sectionStrings.join('\n')}
             title={section.title}
             gridMode={globalGridMode}
             charsPerLine={globalCharsPerLine}
-            onDelete={deleteSection}
+            onDelete={globalSettings.editable_structure ? deleteSection : () => {}}
+            canDelete={globalSettings.editable_structure}
+            isEditable={globalSettings.editable}
             initialContent={section.content}
             initialMaxChars={section.maxChars}
+            scoring={section.scoring}
             onTitleChange={updateSectionTitle}
             onContentChange={updateSectionContent}
           />

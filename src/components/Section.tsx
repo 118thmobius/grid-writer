@@ -10,22 +10,46 @@ interface SectionProps {
   charsPerLine: number;
   initialContent?: string;
   initialMaxChars?: number;
+  scoring?: {
+    maxPoints?: number | null;
+    points?: number | null;
+    comment?: string;
+  };
   onDelete: (id: string) => void;
   onTitleChange: (id: string, title: string) => void;
   onContentChange: (id: string, content: string, maxChars: number) => void;
+  canDelete?: boolean;
+  isEditable?: boolean;
 }
 
-const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMaxChars, onDelete, onTitleChange, onContentChange }: SectionProps) => {
+const Section = ({ 
+  id, 
+  title, 
+  gridMode, 
+  charsPerLine, 
+  initialContent, 
+  initialMaxChars, 
+  scoring, 
+  onDelete, 
+  onTitleChange, 
+  onContentChange, 
+  canDelete = true, 
+  isEditable = true 
+}: SectionProps) => {
   const [content, setContent] = useState(initialContent || '');
   const [isComposing, setIsComposing] = useState(false);
   const [maxChars, setMaxChars] = useState(initialMaxChars || 400);
   
   useEffect(() => {
-    setContent(initialContent || '');
+    if (initialContent !== undefined) {
+      setContent(initialContent);
+    }
   }, [initialContent]);
   
   useEffect(() => {
-    setMaxChars(initialMaxChars || 400);
+    if (initialMaxChars !== undefined) {
+      setMaxChars(initialMaxChars);
+    }
   }, [initialMaxChars]);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [isCustomMode, setIsCustomMode] = useState(false);
@@ -238,7 +262,7 @@ const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMax
   };
 
   return (
-    <div className="section">
+    <div className={`section ${gridMode ? 'grid-mode' : 'normal-mode'}`}>
       <div className="section-header">
         <input
           type="text"
@@ -247,9 +271,16 @@ const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMax
           onFocus={(e) => e.target.select()}
           className="section-title"
           placeholder="セクションタイトル"
+          disabled={!isEditable}
         />
 
-        <button onClick={() => onDelete(id)} className="delete-btn">削除</button>
+        <button 
+          onClick={canDelete ? () => onDelete(id) : undefined} 
+          className="delete-btn"
+          disabled={!canDelete}
+        >
+          削除
+        </button>
       </div>
       
       <div className="section-toolbar">
@@ -268,6 +299,7 @@ const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMax
               }
             }}
             className="chars-input"
+            disabled={!isEditable}
           >
             {Array.from({length: 7}, (_, i) => 20 + i * 5).map(num => (
               <option key={num} value={num}>{num}</option>
@@ -291,12 +323,31 @@ const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMax
               min="1"
               max="2000"
               style={{marginLeft: '5px'}}
+              disabled={!isEditable}
             />
           )}
         </div>
         
         <CharacterCounter text={content} gridMode={gridMode} charsPerLine={charsPerLine} maxChars={maxChars} />
       </div>
+      
+      {scoring && (scoring.maxPoints !== null || scoring.points !== null || scoring.comment) && (
+        <div className="section-scoring">
+          {(scoring.maxPoints !== null || scoring.points !== null) && (
+            <div className="score-info">
+              得点: {scoring.points ?? '-'}/{scoring.maxPoints ?? '-'}
+            </div>
+          )}
+          {scoring.comment && (
+            <div className="comment-info">
+              <span className="comment-label">コメント:</span>
+              <pre className="comment-text" style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0, display: 'inline' }}>
+                {scoring.comment}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
       
       <div className={`section-editor ${gridMode ? 'grid-container' : ''}`}>
         <div className="editor-wrapper">
@@ -311,6 +362,8 @@ const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMax
             onSelect={updateCursorPosition}
             onClick={updateCursorPosition}
             placeholder="内容を入力してください..."
+            disabled={!isEditable}
+            readOnly={!isEditable}
             style={gridMode ? { 
               width: `${24 * charsPerLine }px`,
               height: `${calculateHeight()-4}px`,
@@ -337,14 +390,14 @@ const Section = ({ id, title, gridMode, charsPerLine, initialContent, initialMax
               className="carry-over-indicator"
               style={{
                 top: `${lineIndex * 24 + 8}px`,
-                left: `${24 * charsPerLine + 35}px`
+                left: `${24 * charsPerLine + 43}px`
               }}
             >
               ↓
             </div>
           ))}
           {gridMode && getCursorCharCount() !== null && getCursorCharCount()! % charsPerLine !== 0 && getCursorPosition() && (
-            <div 
+            <div
               className="cursor-char-counter"
               style={{
                 top: `${getCursorPosition()!.top + 8}px`,
