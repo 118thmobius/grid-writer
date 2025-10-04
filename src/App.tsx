@@ -7,6 +7,7 @@ interface SectionData {
   title: string;
   content?: string;
   maxChars?: number;
+  instruction?: string;
   scoring?: {
     maxPoints?: number | null;
     points?: number | null;
@@ -18,13 +19,14 @@ interface ImportedSection {
   id?: string;
   title?: string;
   content?: string;
+  maxCharacters?: number;
   metadata?: {
-    maxCharacters?: number;
-  };
-  scoring?: {
-    maxPoints?: number | null;
-    points?: number | null;
-    comment?: string;
+    instruction?: string;
+    scoring?: {
+      maxPoints?: number | null;
+      points?: number | null;
+      comment?: string;
+    };
   };
 }
 
@@ -39,12 +41,14 @@ interface ImportedEssay {
       editable?: boolean;
       editable_structure?: boolean;
     };
-    sections?: ImportedSection[];
-    totalScoring?: {
-      maxPoints?: number | null;
-      points?: number | null;
-      overallComment?: string;
+    metadata?: {
+      totalScoring?: {
+        maxPoints?: number | null;
+        points?: number | null;
+        overallComment?: string;
+      };
     };
+    sections?: ImportedSection[];
   };
 }
 
@@ -65,6 +69,7 @@ function App() {
     points: null as number | null,
     overallComment: ''
   });
+  const [submitUrl, setSubmitUrl] = useState('');
 
   const addSection = () => {
     const newId = Date.now().toString();
@@ -105,179 +110,39 @@ function App() {
       });
   };
 
-  const parseYAML = (yamlText: string): ImportedEssay | null => {
-    if (!yamlText?.trim()) {
-      console.error('Empty YAML content');
-      return null;
-    }
-    
-    try {
-      const lines = yamlText.split('\n');
-      const result: ImportedEssay = { essay: { sections: [] } };
-      let currentSection: ImportedSection | null = null;
-      let inTotalScoring = false;
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmed = line.trim();
-        
-        if (!trimmed || trimmed.startsWith('#')) continue;
-        
-        if (trimmed === 'totalScoring:') {
-          if (currentSection) {
-            result.essay!.sections!.push(currentSection);
-            currentSection = null;
-          }
-          inTotalScoring = true;
-          if (!result.essay!.totalScoring) result.essay!.totalScoring = {};
-          continue;
-        }
-        
-        if (trimmed === 'globalSettings:') {
-          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
-          continue;
-        }
-        
-        if (trimmed.startsWith('- id:')) {
-          inTotalScoring = false;
-          if (currentSection) {
-            result.essay!.sections!.push(currentSection);
-          }
-          const id = trimmed.split('"')[1] || Date.now().toString();
-          currentSection = { id };
-          continue;
-        }
-        
-        const [key, ...valueParts] = trimmed.split(': ');
-        const value = valueParts.join(': ');
-        
-        if (key === 'title' && !currentSection && !inTotalScoring) {
-          result.essay!.title = value.replace(/"/g, '');
-        } else if (inTotalScoring) {
-          if (key === 'maxPoints') {
-            result.essay!.totalScoring!.maxPoints = parseInt(value) || null;
-          } else if (key === 'points') {
-            result.essay!.totalScoring!.points = parseInt(value) || null;
-          } else if (key === 'overallComment') {
-            if (value.includes('|')) {
-              // Multi-line comment
-              let comment = '';
-              for (let j = i + 1; j < lines.length; j++) {
-                const commentLine = lines[j];
-                if (commentLine.trim() && !commentLine.startsWith('    ')) break;
-                if (commentLine.startsWith('    ')) {
-                  comment += commentLine.substring(4).trimStart() + '\n';
-                }
-              }
-              result.essay!.totalScoring!.overallComment = comment.trim();
-            } else {
-              result.essay!.totalScoring!.overallComment = value.replace(/"/g, '');
-            }
-          }
-        } else if (trimmed === 'timer:') {
-          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
-          if (!result.essay!.globalSettings.timer) result.essay!.globalSettings.timer = {};
-        } else if (key === 'limit') {
-          if (result.essay!.globalSettings?.timer) {
-            result.essay!.globalSettings.timer.limit = parseInt(value) || 0;
-          }
-        } else if (key === 'elapsed') {
-          if (result.essay!.globalSettings?.timer) {
-            result.essay!.globalSettings.timer.elapsed = parseInt(value) || 0;
-          }
-        } else if (key === 'editable') {
-          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
-          result.essay!.globalSettings.editable = value === 'true';
-        } else if (key === 'editable_structure') {
-          if (!result.essay!.globalSettings) result.essay!.globalSettings = {};
-          result.essay!.globalSettings.editable_structure = value === 'true';
-        } else if (key === 'title' && currentSection) {
-          currentSection.title = value.replace(/"/g, '');
-        } else if (key === 'maxCharacters' && currentSection) {
-          if (!currentSection.metadata) currentSection.metadata = {};
-          currentSection.metadata.maxCharacters = parseInt(value) || 400;
-        } else if (key === 'content' && value.includes('|')) {
-          // Multi-line content
-          let content = '';
-          for (let j = i + 1; j < lines.length; j++) {
-            const contentLine = lines[j];
-            // Stop when we hit metadata: or any line with 6 spaces that contains a colon
-            if (contentLine.trim() && (contentLine.startsWith('      ') && contentLine.includes(':'))) {
-              break;
-            }
-            if (contentLine.startsWith('        ')) {
-              content += contentLine.substring(8) + '\n';
-            }
-          }
-          if (currentSection) currentSection.content = content.replace(/\n+$/, '');
-        } else if (key === 'maxPoints' && currentSection) {
-          if (!currentSection.scoring) currentSection.scoring = {};
-          currentSection.scoring.maxPoints = parseInt(value) || null;
-        } else if (key === 'points' && currentSection) {
-          if (!currentSection.scoring) currentSection.scoring = {};
-          currentSection.scoring.points = parseInt(value) || null;
-        } else if (key === 'comment' && currentSection && value.includes('|')) {
-          if (!currentSection.scoring) currentSection.scoring = {};
-          // Multi-line comment
-          let comment = '';
-          for (let j = i + 1; j < lines.length; j++) {
-            const commentLine = lines[j];
-            if (commentLine.trim() && !commentLine.startsWith('          ') && !commentLine.startsWith('    - id:') && commentLine.includes(':')) {
-              break;
-            }
-            if (commentLine.startsWith('          ')) {
-              comment += commentLine.substring(10) + '\n';
-            }
-          }
-          currentSection.scoring.comment = comment.trim();
-        } else if (key === 'comment' && currentSection) {
-          if (!currentSection.scoring) currentSection.scoring = {};
-          currentSection.scoring.comment = value.replace(/"/g, '');
-        }
-      }
-      
-      if (currentSection) {
-        result.essay!.sections!.push(currentSection);
-      }
-      
-
-      return result;
-    } catch (error) {
-      console.error('YAML parsing error:', error);
-      return null;
-    }
-  };
-
-  const importFromYAML = async () => {
-    const confirmed = confirm('既存のセクションはすべて削除され、YAMLファイルの内容で置き換えられます。\n続行しますか？');
+  const importFromJSON = async () => {
+    const confirmed = confirm('既存のセクションはすべて削除され、JSONファイルの内容で置き換えられます。\n続行しますか？');
     
     if (!confirmed) return;
     
     try {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = '.yaml,.yml';
+      input.accept = '.json';
       
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
         
         const text = await file.text();
-        const parsed = parseYAML(text);
+        let parsed: ImportedEssay;
+        
+        try {
+          parsed = JSON.parse(text);
+        } catch (error) {
+          alert('JSONファイルの形式が正しくありません');
+          return;
+        }
         
         if (!parsed?.essay) {
-          alert('YAMLファイルの形式が正しくありません');
+          alert('JSONファイルの形式が正しくありません');
           return;
         }
         
         const essay = parsed.essay;
         
-        // Restore essay title
-        if (essay.title) {
-          setEssayTitle(essay.title);
-        }
+        if (essay.title) setEssayTitle(essay.title);
         
-        // Restore global settings (excluding gridMode and charsPerLine)
         if (essay.globalSettings) {
           setGlobalSettings({
             timer: {
@@ -289,32 +154,27 @@ function App() {
           });
         }
         
-        // Restore total scoring
         setTotalScoring({
-          maxPoints: essay.totalScoring?.maxPoints ?? null,
-          points: essay.totalScoring?.points ?? null,
-          overallComment: essay.totalScoring?.overallComment ?? ''
+          maxPoints: essay.metadata?.totalScoring?.maxPoints ?? null,
+          points: essay.metadata?.totalScoring?.points ?? null,
+          overallComment: essay.metadata?.totalScoring?.overallComment ?? ''
         });
         
-        // Completely replace sections
-        if (essay.sections && essay.sections.length > 0) {
-          const newSections: SectionData[] = essay.sections.map((section, index) => {
-            return {
-              id: section.id || Date.now().toString() + index,
-              title: section.title || `セクション${index + 1}`,
-              content: section.content || '',
-              maxChars: section.metadata?.maxCharacters || 400,
-              scoring: section.scoring
-            };
-          });
-          
+        if (essay.sections?.length) {
+          const newSections: SectionData[] = essay.sections.map((section: ImportedSection, index: number) => ({
+            id: section.id || Date.now().toString() + index,
+            title: section.title || `セクション${index + 1}`,
+            content: section.content || '',
+            maxChars: section.maxCharacters || 400,
+            instruction: section.metadata?.instruction,
+            scoring: section.metadata?.scoring
+          }));
           setSections(newSections);
         } else {
-          // If no sections in YAML, create default section
           setSections([{ id: Date.now().toString(), title: 'セクション1' }]);
         }
         
-        alert('YAMLファイルからデータを復元しました');
+        alert('JSONファイルからデータを復元しました');
       };
       
       input.click();
@@ -324,85 +184,49 @@ function App() {
     }
   };
 
-  const exportAllToYAML = async () => {
-    const yamlSections = sections.map(section => {
-      const normalizedContent = normalizeText(section.content || '');
-      return {
+  const createJSONData = () => ({
+    essay: {
+      title: essayTitle,
+      globalSettings: {
+        timer: {
+          limit: globalSettings.timer?.limit ?? 0,
+          elapsed: globalSettings.timer?.elapsed ?? 0
+        },
+        editable: globalSettings.editable,
+        editable_structure: globalSettings.editable_structure
+      },
+      ...(totalScoring.maxPoints !== null || totalScoring.points !== null || totalScoring.overallComment ? {
+        metadata: {
+          totalScoring: {
+            maxPoints: totalScoring.maxPoints,
+            points: totalScoring.points,
+            overallComment: totalScoring.overallComment
+          }
+        }
+      } : {}),
+      sections: sections.map(section => ({
         id: section.id,
         title: section.title,
-        content: normalizedContent,
+        content: normalizeText(section.content || ''),
+        maxCharacters: section.maxChars || 400,
         metadata: {
-          maxCharacters: section.maxChars || 400
-        },
-        scoring: section.scoring || {
-          maxPoints: null,
-          points: null,
-          comment: ""
+          ...(section.instruction && { instruction: section.instruction }),
+          ...(section.scoring && {
+            scoring: section.scoring
+          })
         }
-      };
-    });
-
-    const escapeYamlString = (str: string) => {
-      return str.replace(/"/g, '\\"').replace(/\\/g, '\\\\');
-    };
-    
-    const sectionStrings = yamlSections.map(section => {
-      const contentLines = section.content.split('\n').map(line => `        ${escapeYamlString(line)}`).join('\n');
-      const scoringComment = section.scoring.comment ? section.scoring.comment.split('\n').map(line => `          ${escapeYamlString(line)}`).join('\n') : '';
-      
-      return `    - id: "${escapeYamlString(section.id)}"
-      title: "${escapeYamlString(section.title)}"
-      content: |
-${contentLines}
-      metadata:
-        maxCharacters: ${section.metadata.maxCharacters}${section.scoring.maxPoints !== null || section.scoring.points !== null || section.scoring.comment ? `
-      scoring:
-        maxPoints: ${section.scoring.maxPoints}
-        points: ${section.scoring.points}
-        comment: |${scoringComment ? '\n' + scoringComment : ''}` : ''}`;
-    });
-    
-    const hasGlobalSettings = globalSettings.timer?.limit || globalSettings.timer?.elapsed || 
-                             globalSettings.editable !== true || globalSettings.editable_structure !== true;
-    
-    let globalSettingsStr = '';
-    if (hasGlobalSettings) {
-      globalSettingsStr = '  globalSettings:\n';
-      if (globalSettings.timer?.limit || globalSettings.timer?.elapsed) {
-        globalSettingsStr += `    timer:\n      limit: ${globalSettings.timer.limit}\n      elapsed: ${globalSettings.timer.elapsed}\n`;
-      }
-      if (globalSettings.editable !== true) {
-        globalSettingsStr += `    editable: ${globalSettings.editable}\n`;
-      }
-      if (globalSettings.editable_structure !== true) {
-        globalSettingsStr += `    editable_structure: ${globalSettings.editable_structure}\n`;
-      }
+      }))
     }
-    
-    const hasTotalScoring = totalScoring.maxPoints !== null || totalScoring.points !== null || totalScoring.overallComment;
-    
-    let totalScoringStr = '';
-    if (hasTotalScoring) {
-      totalScoringStr = '  totalScoring:\n';
-      if (totalScoring.maxPoints !== null) totalScoringStr += `    maxPoints: ${totalScoring.maxPoints}\n`;
-      if (totalScoring.points !== null) totalScoringStr += `    points: ${totalScoring.points}\n`;
-      if (totalScoring.overallComment) {
-        const commentLines = totalScoring.overallComment.split('\n').map(line => `      ${escapeYamlString(line)}`).join('\n');
-        totalScoringStr += `    overallComment: |\n${commentLines}`;
-      }
-    }
-    
-    const yamlString = `essay:
-  title: "${escapeYamlString(essayTitle)}"
-${globalSettingsStr}  sections:
-${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
+  });
 
+  const exportAllToJSON = async () => {
     try {
-      const blob = new Blob([yamlString], { type: 'text/yaml' });
+      const jsonString = JSON.stringify(createJSONData(), null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'essay-output.yaml';
+      a.download = 'essay-output.json';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -410,6 +234,71 @@ ${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
     } catch (err) {
       console.error('ファイルの保存に失敗しました:', err);
       alert('ファイルの保存に失敗しました');
+    }
+  };
+
+  const submitToURL = async () => {
+    if (!submitUrl.trim()) {
+      alert('URLを入力してください');
+      return;
+    }
+
+    try {
+      const response = await fetch(submitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(createJSONData())
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      
+      if (responseData?.essay) {
+        const essay = responseData.essay;
+        
+        if (essay.title) setEssayTitle(essay.title);
+        
+        if (essay.globalSettings) {
+          setGlobalSettings({
+            timer: {
+              limit: essay.globalSettings.timer?.limit ?? 0,
+              elapsed: essay.globalSettings.timer?.elapsed ?? 0
+            },
+            editable: essay.globalSettings.editable ?? true,
+            editable_structure: essay.globalSettings.editable_structure ?? true
+          });
+        }
+        
+        setTotalScoring({
+          maxPoints: essay.metadata?.totalScoring?.maxPoints ?? null,
+          points: essay.metadata?.totalScoring?.points ?? null,
+          overallComment: essay.metadata?.totalScoring?.overallComment ?? ''
+        });
+        
+        if (essay.sections?.length) {
+          const newSections: SectionData[] = essay.sections.map((section: ImportedSection, index: number) => ({
+            id: section.id || Date.now().toString() + index,
+            title: section.title || `セクション${index + 1}`,
+            content: section.content || '',
+            maxChars: section.maxCharacters || 400,
+            instruction: section.metadata?.instruction,
+            scoring: section.metadata?.scoring
+          }));
+          setSections(newSections);
+        }
+        
+        alert('サーバーからの応答を受信しました');
+      } else {
+        alert('サーバーからの応答形式が正しくありません');
+      }
+    } catch (error) {
+      console.error('送信エラー:', error);
+      alert('送信に失敗しました: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -453,11 +342,21 @@ ${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
           >
             + セクション追加
           </button>
-          <button onClick={importFromYAML} className="import-btn">
-            ↑ YAML読み込み
+          <input
+            type="url"
+            value={submitUrl}
+            onChange={(e) => setSubmitUrl(e.target.value)}
+            placeholder="送信先URL"
+            className="url-input"
+          />
+          <button onClick={submitToURL} className="submit-btn">
+            → 送信
           </button>
-          <button onClick={exportAllToYAML} className="export-all-btn">
-            ↓ YAML保存
+          <button onClick={importFromJSON} className="import-btn">
+            ↑ 読み込み
+          </button>
+          <button onClick={exportAllToJSON} className="export-all-btn">
+            ↓ 保存
           </button>
         </div>
       </header>
@@ -493,6 +392,7 @@ ${sectionStrings.join('\n')}${totalScoringStr ? '\n' + totalScoringStr : ''}`;
             isTitleEditable={globalSettings.editable_structure}
             initialContent={section.content}
             initialMaxChars={section.maxChars}
+            instruction={section.instruction}
             scoring={section.scoring}
             onTitleChange={updateSectionTitle}
             onContentChange={updateSectionContent}

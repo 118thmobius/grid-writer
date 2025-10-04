@@ -9,38 +9,42 @@
       "editable": false,
       "editable_structure": false
     },
+    "metadata": {
+      "totalScoring": {
+        "maxPoints": 50,
+        "points": 40,
+        "overallComment": "全体的によく書けています。\n構成がしっかりしています。"
+      }
+    },
     "sections": [
       {
         "id": "1",
         "title": "序論",
         "content": "これはテストの内容です。\n複数行にわたって書かれています。",
+        "maxCharacters": 100,
         "metadata": {
-          "maxCharacters": 100
-        },
-        "scoring": {
-          "maxPoints": 10,
-          "points": 8,
-          "comment": "良い内容です。\nもう少し詳しく書けるとよいでしょう。"
+          "instruction": "問題提起を明確に示し、論点を整理してください",
+          "scoring": {
+            "maxPoints": 10,
+            "points": 8,
+            "comment": "良い内容です。\nもう少し詳しく書けるとよいでしょう。"
+          }
         }
       },
       {
         "id": "2",
         "title": "本論",
         "content": "本論の内容です。",
+        "maxCharacters": 200,
         "metadata": {
-          "maxCharacters": 200
-        },
-        "scoring": {
-          "maxPoints": 10,
-          "points": 8,
-          "comment": "良い内容です。\nもう少し詳しく書けるとよいでしょう。"
+          "instruction": "根拠を示しながら論理的に展開してください",
+          "scoring": {
+            "maxPoints": 10,
+            "points": 8,
+            "comment": "良い内容です。\nもう少し詳しく書けるとよいでしょう。"
+          }
         }
       }
-    ],
-    "totalScoring": {
-      "maxPoints": 50,
-      "points": 40,
-      "overallComment": "全体的によく書けています。\n構成がしっかりしています。"
-    }
+    ]
   }
 }

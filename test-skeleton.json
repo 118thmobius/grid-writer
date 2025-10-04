@@ -14,16 +14,18 @@
         "id": "1",
         "title": "序論",
         "content": "",
+        "maxCharacters": 100,
         "metadata": {
-          "maxCharacters": 100
+          "instruction": "30字以内で、わかりやすく簡潔に表してください"
         }
       },
       {
         "id": "2",
         "title": "本論",
         "content": "",
+        "maxCharacters": 200,
         "metadata": {
-          "maxCharacters": 200
+          "instruction": "30字以内で、わかりやすく簡潔に表してください"
         }
       }
     ]

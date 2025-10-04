@@ -10,6 +10,7 @@ export interface SectionProps {
   charsPerLine: number;
   initialContent?: string;
   initialMaxChars?: number;
+  instruction?: string;
   scoring?: {
     maxPoints?: number | null;
     points?: number | null;
@@ -30,6 +31,7 @@ const Section = ({
   charsPerLine, 
   initialContent, 
   initialMaxChars, 
+  instruction,
   scoring, 
   onDelete, 
   onTitleChange, 
@@ -284,6 +286,12 @@ const Section = ({
           削除
         </button>
       </div>
+      
+      {instruction && (
+        <div className="section-instruction">
+          {instruction}
+        </div>
+      )}
       
       <div className="section-toolbar">
         <div className="max-chars-control">
